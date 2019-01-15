@@ -40,15 +40,16 @@ module.exports = function() {
 
         const limitPaths = getLimitPaths({
             filePaths,
-            commitPaths: program.args.map(arg => path.relative('', arg))
+            commitPaths: program.args.map(arg => path.relative('', arg).replace(/^"|"$/g, ''))
         });
 
         if (limitPaths && limitPaths.length) {
             const fileStyle = chalk.redBright.bold.underline;
-            const userStyle = chalk.cyanBright.bold.underline;
+            const warnStyle = chalk.whiteBright.bgRed;
+            const userStyle = chalk.underline;
             console.log(`
                 \n${authorEmail || 'User'} ${limitMsg || 'is not allowed to commit these files:'} \n${fileStyle(`${limitPaths.join('\n')}`)}
-                \n${contactMsg || 'Please contact these developers:'} \n${userStyle(`${emails.join('\n')}`)}
+                \n${warnStyle(contactMsg || 'Please contact these developers:')} \n${userStyle(emails.join(', '))}}
                 \n\t\r
             `);
             process.exit(ERROR);
