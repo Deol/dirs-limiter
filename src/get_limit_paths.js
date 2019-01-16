@@ -1,6 +1,8 @@
-const limit = require('ignore');
+const mm = require('micromatch');
 
-module.exports = function({ filePaths = [], commitPaths = [] } = {}) {
-    const limiter = limit().add(filePaths);
-    return commitPaths.filter(commitPath => limit.isPathValid(commitPath) && limiter.ignores(commitPath));
+module.exports = function({ commitFiles, globs } = {}) {
+    if(!commitFiles || !commitFiles.length || !globs || !globs.length) {
+        return [];
+    }
+    return mm(commitFiles, globs);
 };

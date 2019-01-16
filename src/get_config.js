@@ -9,5 +9,5 @@ module.exports = function(configPath) {
     const jsPath = path.resolve(configPath || './dirs-limiter.config.js');
     const jsConfig = fs.existsSync(jsPath) && require(jsPath);
 
-    return (configPath ? jsConfig : pkgConfig || jsConfig) || {};
+    return (configPath ? jsConfig : pkgConfig || jsConfig) || null;
 };

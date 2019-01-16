@@ -2,9 +2,11 @@
 
 const path = require('path');
 const chalk = require('chalk');
+const isGlob = require('is-glob');
 const program = require('commander');
 const pkg = require('../package.json');
 const getConfig = require('./get_config');
+const getEmailsStr = require('./get_emails_str');
 const getLimitPaths = require('./get_limit_paths');
 
 const PASS = 0, ERROR = 1;
@@ -21,16 +23,24 @@ module.exports = function() {
             `)
             .parse(process.argv);
 
-        const {
-            filePaths = [],
-            emails = [],
-            limitMsg = '',
-            contactMsg = ''
-        } = getConfig(program.config);
-
-        if (!filePaths || !filePaths.length) {
+        const config = getConfig(program.config);
+        if (!config) {
             console.log(chalk.whiteBright.bgRed('【dirs-limiter】Lack of configuration!'));
             process.exit(ERROR);
+        }
+
+        const {
+            globs = [],
+            emails = [],
+            limitMsg = '',
+            contactMsg = '',
+            emailColumn = ''
+        } = config || {};
+
+        const invalidGlobs = globs.filter(glob => !isGlob(glob)) || [];
+        if (invalidGlobs.length) {
+            console.log('Invalid ?(ext)globs:');
+            console.log(chalk.whiteBright.bgRed(invalidGlobs.join('\n')));
         }
 
         const authorEmail = process.env.GIT_AUTHOR_EMAIL;
@@ -39,8 +49,8 @@ module.exports = function() {
         }
 
         const limitPaths = getLimitPaths({
-            filePaths,
-            commitPaths: program.args.map(arg => path.relative('', arg).replace(/^"|"$/g, ''))
+            commitFiles: program.args.map(arg => path.relative('', arg).replace(/^"|"$/g, '')),
+            globs: globs.filter(path => isGlob(path))
         });
 
         if (limitPaths && limitPaths.length) {
@@ -49,7 +59,7 @@ module.exports = function() {
             const userStyle = chalk.underline;
             console.log(`
                 \n${authorEmail || 'User'} ${limitMsg || 'is not allowed to commit these files:'} \n${fileStyle(`${limitPaths.join('\n')}`)}
-                \n${warnStyle(contactMsg || 'Please contact these developers:')} \n${userStyle(emails.join(', '))}}
+                \n${warnStyle(contactMsg || 'Please contact these developers:')} \n${userStyle(getEmailsStr(emails, emailColumn))}}
                 \n\t\r
             `);
             process.exit(ERROR);

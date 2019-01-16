@@ -1,1 +1,1 @@
-# dirs-limiter(swip)
+# dirs-limiter

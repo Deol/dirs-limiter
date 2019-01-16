@@ -43,6 +43,7 @@
   "dependencies": {
     "chalk": "^2.4.2",
     "commander": "^2.19.0",
-    "ignore": "^5.0.4"
+    "is-glob": "^4.0.0",
+    "micromatch": "^3.1.10"
   }
 }
