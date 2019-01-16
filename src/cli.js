@@ -2,7 +2,6 @@
 
 const path = require('path');
 const chalk = require('chalk');
-const isGlob = require('is-glob');
 const program = require('commander');
 const pkg = require('../package.json');
 const getConfig = require('./get_config');
@@ -37,31 +36,20 @@ module.exports = function() {
             emailColumn = ''
         } = config || {};
 
-        const invalidGlobs = globs.filter(glob => !isGlob(glob)) || [];
-        if (invalidGlobs.length) {
-            console.log('Invalid ?(ext)globs:');
-            console.log(chalk.whiteBright.bgRed(invalidGlobs.join('\n')));
-        }
-
         const authorEmail = process.env.GIT_AUTHOR_EMAIL;
         if (!emails || !emails.length || emails.includes(authorEmail)) {
             process.exit(PASS);
         }
 
-        const limitPaths = getLimitPaths({
-            commitFiles: program.args.map(arg => path.relative('', arg).replace(/^"|"$/g, '')),
-            globs: globs.filter(path => isGlob(path))
-        });
+        const commitFiles = program.args.map(arg => path.relative('', arg).replace(/^"|"$/g, ''));
+        const limitPaths = getLimitPaths({ commitFiles, globs });
 
         if (limitPaths && limitPaths.length) {
             const fileStyle = chalk.redBright.bold.underline;
             const warnStyle = chalk.whiteBright.bgRed;
             const userStyle = chalk.underline;
-            console.log(`
-                \n${authorEmail || 'User'} ${limitMsg || 'is not allowed to commit these files:'} \n${fileStyle(`${limitPaths.join('\n')}`)}
-                \n${warnStyle(contactMsg || 'Please contact these developers:')} \n${userStyle(getEmailsStr(emails, emailColumn))}}
-                \n\t\r
-            `);
+            console.log(`\n${authorEmail || 'User'} ${limitMsg || 'is not allowed to commit these files:'} \n${fileStyle(`${limitPaths.join('\n')}`)}`);
+            console.log(`\n${warnStyle(contactMsg || 'Please contact these developers:')} \n${userStyle(getEmailsStr(emails, emailColumn))}\n`);
             process.exit(ERROR);
         }
     } catch (err) {
