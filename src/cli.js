@@ -33,7 +33,8 @@ module.exports = function() {
             emails = [],
             limitMsg = '',
             contactMsg = '',
-            emailColumn = ''
+            emailColumn = '',
+            excludes = []
         } = config || {};
 
         const authorEmail = process.env.GIT_AUTHOR_EMAIL;
@@ -42,7 +43,7 @@ module.exports = function() {
         }
 
         const commitFiles = program.args.map(arg => path.relative('', arg).replace(/^"|"$/g, ''));
-        const limitPaths = getLimitPaths({ commitFiles, globs });
+        const limitPaths = getLimitPaths({ commitFiles, globs, excludes, authorEmail });
 
         if (limitPaths && limitPaths.length) {
             const fileStyle = chalk.redBright.bold.underline;
