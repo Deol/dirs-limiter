@@ -10,7 +10,7 @@ const getLimitPaths = require('./get_limit_paths');
 
 const PASS = 0, ERROR = 1;
 
-module.exports = function() {
+module.exports = async function() {
     try {
         program
             .version(pkg.version)
@@ -22,7 +22,7 @@ module.exports = function() {
             `)
             .parse(process.argv);
 
-        const config = getConfig(program.config);
+        const config = await getConfig(program.config);
         if (!config) {
             console.log(chalk.whiteBright.bgRed('【dirs-limiter】Lack of configuration!'));
             process.exit(ERROR);

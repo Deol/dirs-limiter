@@ -1,3 +1,4 @@
 {
-  "extends": "kaola/esnext"
+  "extends": "kaola/esnext",
+  "parser": "babel-eslint"
 }

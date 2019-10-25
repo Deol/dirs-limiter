@@ -1,7 +1,7 @@
 {
   "name": "dirs-limiter",
   "version": "0.1.4",
-  "description": "",
+  "description": "setting git push limits by configuration",
   "main": "./src/cli.js",
   "bin": "./bin/dirs-limiter.js",
   "scripts": {
@@ -35,14 +35,15 @@
   },
   "homepage": "https://github.com/Deol/dirs-limiter#readme",
   "devDependencies": {
-    "eslint": "^5.8.0",
-    "eslint-config-kaola": "^0.1.3",
-    "husky": "^1.1.3",
-    "lint-staged": "^8.0.4"
+    "babel-eslint": "^10.0.3",
+    "eslint": "^6.5.1",
+    "eslint-config-kaola": "^0.2.7-beat-14",
+    "husky": "^3.0.9",
+    "lint-staged": "^8.2.1"
   },
   "dependencies": {
     "chalk": "^2.4.2",
-    "commander": "^2.19.0",
-    "micromatch": "^3.1.10"
+    "commander": "^3.0.2",
+    "micromatch": "^4.0.2"
   }
 }
