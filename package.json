@@ -3,7 +3,7 @@
   "version": "0.1.4",
   "description": "setting git push limits by configuration",
   "main": "./src/cli.js",
-  "bin": "./bin/dirs-limiter.js",
+  "bin": "./bin/dirs-limiter.sh",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,12 +13,11 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "prepare-commit-msg": "dirs-limiter --config ./example/dirs-limiter.config.js"
     }
   },
   "lint-staged": {
     "./**/*.js": [
-      "node ./bin/dirs-limiter.js --config ./example/dirs-limiter.config.js",
       "eslint --fix",
       "git add"
     ]
@@ -37,13 +36,15 @@
   "devDependencies": {
     "babel-eslint": "^10.0.3",
     "eslint": "^6.5.1",
-    "eslint-config-kaola": "^0.2.7-beat-14",
+    "eslint-config-kaola": "^0.1.3",
     "husky": "^3.0.9",
     "lint-staged": "^8.2.1"
   },
   "dependencies": {
     "chalk": "^2.4.2",
     "commander": "^3.0.2",
-    "micromatch": "^4.0.2"
+    "inquirer": "^7.0.0",
+    "micromatch": "^4.0.2",
+    "staged-git-files": "^1.2.0"
   }
 }

@@ -1,57 +1,92 @@
 'use strict';
 
-const path = require('path');
 const chalk = require('chalk');
 const program = require('commander');
-const pkg = require('../package.json');
+const inquirer = require('inquirer');
+const { version } = require('../package.json');
 const getConfig = require('./get_config');
 const getEmailsStr = require('./get_emails_str');
-const getLimitPaths = require('./get_limit_paths');
+const getGlobPaths = require('./get_glob_paths');
+const getStagedFiles = require('./get_staged_files');
+const rewriteMessage = require('./rewrite_message');
 
 const PASS = 0, ERROR = 1;
+const userStyle = chalk.underline;
+const warnStyle = chalk.whiteBright.bgRed;
+const noticeStyle = chalk.yellow.bold.underline;
+const fileStyle = chalk.redBright.bold.underline;
 
 module.exports = async function() {
     try {
         program
-            .version(pkg.version)
+            .version(version)
             .option('-c, --config <path>', `path to a specific configuration file (CommonJS).
                      If no --config argument is provided, dirs-limiter will search for configuration files in the following places, in this order:
                      - a dirs-limiter property in package.json
                      - a dirs-limiter.config.js file exporting a JS object
-                     The search will begin in the working directory and move up the directory tree until a configuration file is found.
-            `)
+                     The search will begin in the working directory and move up the directory tree until a configuration file is found.`)
+            .option('-t, --tty-mode', 'execution in TTY mode')
+            .option('-g, --gui-mode', 'execution in GUI mode')
             .parse(process.argv);
 
+        // 获取 staged 中的 commit files，若无提交则直接绕过钩子
+        const stagedFiles = await getStagedFiles(program.args);
+        !stagedFiles || !stagedFiles.length && process.exit(PASS);
+
+        // 获取配置信息
         const config = await getConfig(program.config);
         if (!config) {
-            console.log(chalk.whiteBright.bgRed('【dirs-limiter】Lack of configuration!'));
+            console.error(warnStyle('【dirs-limiter】Lack of configuration!'));
             process.exit(ERROR);
         }
-
         const {
-            globs = [],
-            emails = [],
-            limitMsg = '',
-            contactMsg = '',
-            emailColumn = '',
-            excludes = []
-        } = config || {};
+            globs, emails,
+            excludes, warnings,
+            emailColumn, limitMsg, contactMsg, guiWarningMsg
+        } = config;
 
+        // 当前邮箱用户在管理员邮箱列表中时，直接绕过此钩子
         const authorEmail = process.env.GIT_AUTHOR_EMAIL;
-        if (!emails || !emails.length || emails.includes(authorEmail)) {
-            process.exit(PASS);
-        }
+        !emails || !emails.length || emails.includes(authorEmail) && process.exit(PASS);
 
-        const commitFiles = program.args.map(arg => path.relative('', arg).replace(/^"|"$/g, ''));
-        const limitPaths = getLimitPaths({ commitFiles, globs, excludes, authorEmail });
-
+        // 获取拦截文件列表和二次确认文件列表
+        const { limitPaths, warningPaths } = getGlobPaths({ stagedFiles, globs, authorEmail, excludes, warnings });
+        // 存在限制提交的文件，则直接拦截退出
         if (limitPaths && limitPaths.length) {
-            const fileStyle = chalk.redBright.bold.underline;
-            const warnStyle = chalk.whiteBright.bgRed;
-            const userStyle = chalk.underline;
-            console.log(`\n${authorEmail || 'User'} ${limitMsg || 'is not allowed to commit these files:'} \n${fileStyle(`${limitPaths.join('\n')}`)}`);
-            console.log(`\n${warnStyle(contactMsg || 'Please contact these developers:')} \n${userStyle(getEmailsStr(emails, emailColumn))}\n`);
+            console.error(`\n${authorEmail || 'You'} ${limitMsg || 'are not allowed to commit these files:'} \n${fileStyle(`${limitPaths.join('\n')}`)}`);
+            console.error(`\n${warnStyle(contactMsg || 'Please contact these developers:')} \n${userStyle(getEmailsStr(emails, emailColumn))}\n`);
             process.exit(ERROR);
+        }
+        // 存在需要二次确认的文件，进行交互式确认
+        if (warningPaths.length) {
+            // GUI 环境下，直接拦截报错，提示去终端中执行命令
+            if (program.guiMode) {
+                console.error(`\n${authorEmail || 'You'} ${limitMsg || 'are not allowed to commit these files:'} \n${fileStyle(`${warningPaths.join('\n')}`)}`);
+                console.error(`\n${warnStyle(guiWarningMsg || 'Please use the terminal to try again!')}\n`);
+                process.exit(ERROR);
+            }
+            // 终端环境下，进行二次确认
+            const warnings = config.warnings || [];
+            for (let i = 0; i < warnings.length; i++) {
+                let { globs, options, refuseMsg, commitMsg } = warnings[i] || {};
+                let { limitPaths: paths } = getGlobPaths({ stagedFiles: warningPaths, globs });
+                if(!options || !options.length || !commitMsg || !paths.length) {
+                    continue;
+                }
+                // 进入交互式确认阶段
+                console.info(`\n${noticeStyle(paths.join('\n'))}`);
+                let answers = await inquirer.prompt(options);
+                // 只要有一个回答不合规范则直接退出提交流程
+                if(options.some(option => !answers[option.name])) {
+                    console.error(`\n${warnStyle(refuseMsg || 'Not allowed to commit these files!')}\n`);
+                    process.exit(ERROR);
+                }
+                // 存在输入信息情况，则写入 commit message 中
+                await rewriteMessage(options.reduce((appendMsg, option) => {
+                    let { type, name } = option || {};
+                    return type === 'input' ? appendMsg.replace(`$\{${name}}`, answers[name]) : appendMsg;
+                }, commitMsg));
+            }
         }
     } catch (err) {
         console.error(err);
