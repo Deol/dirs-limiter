@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "setting git push limits by configuration",
   "main": "./src/cli.js",
-  "bin": "./bin/dirs-limiter.sh",
+  "bin": {
+    "dirs-limiter": "./bin/dirs-limiter.sh",
+    "dirs-limiterjs": "./bin/dirs-limiter.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

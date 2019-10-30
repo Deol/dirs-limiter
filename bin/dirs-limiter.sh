@@ -8,8 +8,4 @@ else
 fi
 
 # 将传入参数 $* 赋回 node，追加使用端环境
-if [ -f $(pwd)/bin/dirs-limiter.js ]; then
-    node $(pwd)/bin/dirs-limiter.js $* $env_mode
-else
-    echo 'Can be used only in git prepare-commit-msg hook.'
-fi
+dirs-limiterjs $* $env_mode

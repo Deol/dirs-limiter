@@ -1,9 +1,7 @@
 'use strict';
 
 const path = require('path');
-const util = require('util');
 const sgf = require('staged-git-files');
-const sgfiy = util.promisify(sgf);
 
 module.exports = async function(files) {
     // lint-staged matched files
@@ -11,6 +9,6 @@ module.exports = async function(files) {
         return files.map(file => path.relative(process.cwd(), file).replace(/^"|"$/g, ''));
     }
     // all staged files
-    const stagedFiles = await sgfiy();
+    const stagedFiles = await sgf();
     return stagedFiles.map(file => file.filename);
 };
