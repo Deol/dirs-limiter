@@ -1,6 +1,6 @@
 {
   "name": "dirs-limiter",
-  "version": "1.0.0",
+  "version": "1.0.1-0",
   "description": "setting git push limits by configuration",
   "main": "./src/cli.js",
   "bin": {
