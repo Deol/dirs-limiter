@@ -29,10 +29,6 @@ module.exports = async function() {
             .option('-g, --gui-mode', 'execution in GUI mode')
             .parse(process.argv);
 
-        // 获取 staged 中的 commit files，若无提交则直接绕过钩子
-        const stagedFiles = await getStagedFiles(program.args);
-        !stagedFiles || !stagedFiles.length && process.exit(PASS);
-
         // 获取配置信息
         const config = await getConfig(program.config);
         if (!config) {
@@ -42,26 +38,30 @@ module.exports = async function() {
         const {
             globs, emails,
             excludes, warnings,
-            emailColumn, limitMsg, contactMsg, guiWarningMsg
+            gitDir, emailColumn, limitMsg, contactMsg, guiWarningMsg
         } = config;
+
+        // 获取 staged 中的 commit files，若无提交则直接绕过钩子
+        const stagedFiles = await getStagedFiles(gitDir);
+        !stagedFiles || !stagedFiles.length && process.exit(PASS);
 
         // 当前邮箱用户在管理员邮箱列表中时，直接绕过此钩子
         const authorEmail = process.env.GIT_AUTHOR_EMAIL;
         !emails || !emails.length || emails.includes(authorEmail) && process.exit(PASS);
 
         // 获取拦截文件列表和二次确认文件列表
-        const { limitPaths, warningPaths } = getGlobPaths({ stagedFiles, globs, authorEmail, excludes, warnings });
+        const { limitFiles, warningFiles } = getGlobPaths({ stagedFiles, globs, authorEmail, excludes, warnings });
         // 存在限制提交的文件，则直接拦截退出
-        if (limitPaths && limitPaths.length) {
-            console.error(`\n${authorEmail || 'You'} ${limitMsg || 'are not allowed to commit these files:'} \n${fileStyle(`${limitPaths.join('\n')}`)}`);
+        if (limitFiles && limitFiles.length) {
+            console.error(`\n${authorEmail || 'You'} ${limitMsg || 'are not allowed to commit these files:'} \n${fileStyle(`${limitFiles.join('\n')}`)}`);
             console.error(`\n${warnStyle(contactMsg || 'Please contact these developers:')} \n${userStyle(getEmailsStr(emails, emailColumn))}\n`);
             process.exit(ERROR);
         }
         // 存在需要二次确认的文件，进行交互式确认
-        if (warningPaths.length) {
+        if (warningFiles.length) {
             // GUI 环境下，直接拦截报错，提示去终端中执行命令
             if (program.guiMode) {
-                console.error(`\n${authorEmail || 'You'} ${limitMsg || 'are not allowed to commit these files:'} \n${fileStyle(`${warningPaths.join('\n')}`)}`);
+                console.error(`\n${authorEmail || 'You'} ${limitMsg || 'are not allowed to commit these files:'} \n${fileStyle(`${warningFiles.join('\n')}`)}`);
                 console.error(`\n${warnStyle(guiWarningMsg || 'Please use the terminal to try again!')}\n`);
                 process.exit(ERROR);
             }
@@ -69,7 +69,7 @@ module.exports = async function() {
             const warnings = config.warnings || [];
             for (let i = 0; i < warnings.length; i++) {
                 let { globs, options, refuseMsg, commitMsg } = warnings[i] || {};
-                let { limitPaths: paths } = getGlobPaths({ stagedFiles: warningPaths, globs });
+                let { limitFiles: paths } = getGlobPaths({ stagedFiles: warningFiles, globs });
                 if(!options || !options.length || !commitMsg || !paths.length) {
                     continue;
                 }
@@ -85,7 +85,7 @@ module.exports = async function() {
                 await rewriteMessage(options.reduce((appendMsg, option) => {
                     let { type, name } = option || {};
                     return type === 'input' ? appendMsg.replace(`$\{${name}}`, answers[name]) : appendMsg;
-                }, commitMsg));
+                }, commitMsg), gitDir);
             }
         }
     } catch (err) {

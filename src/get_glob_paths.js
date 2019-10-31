@@ -17,9 +17,8 @@ const filterGlobs = (list, func) => list && list.reduce && list.reduce((globs, i
 module.exports = function({ globs, stagedFiles, authorEmail, excludes, warnings } = {}) {
     if (!globs || !stagedFiles || !globs.length || !stagedFiles.length) {
         return {
-            limitPaths: [],
-            // excludePaths: [],
-            warningPaths: []
+            limitFiles: [],
+            warningFiles: []
         };
     }
     // 过滤白名单 globs
@@ -29,10 +28,8 @@ module.exports = function({ globs, stagedFiles, authorEmail, excludes, warnings 
     const warningGlobs = filterGlobs(warnings);
     return {
         // 限制提交的文件列表
-        limitPaths: mm(stagedFiles, globs, { ignore: excludeGlobs.concat(warningGlobs) }) || [],
-        // limitPaths 需要过滤的匹配子集，即不限制提交的白名单列表
-        // excludePaths: excludeGlobs.length && mm(stagedFiles, excludeGlobs) || [],
+        limitFiles: mm(stagedFiles, globs, { ignore: excludeGlobs.concat(warningGlobs) }) || [],
         // 需要用户进行二次确认的警告文件列表
-        warningPaths: warningGlobs.length && mm(stagedFiles, warningGlobs, { ignore: excludeGlobs }) || []
+        warningFiles: warningGlobs.length && mm(stagedFiles, warningGlobs, { ignore: excludeGlobs }) || []
     };
 };
