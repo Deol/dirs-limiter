@@ -39,7 +39,7 @@
     "eslint": "^6.5.1",
     "eslint-config-kaola": "^0.2.7-beat-14",
     "husky": "^3.0.9",
-    "lint-staged": "^8.2.1"
+    "lint-staged": "^13.1.0"
   },
   "dependencies": {
     "chalk": "^2.4.2",
